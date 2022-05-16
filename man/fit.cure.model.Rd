@@ -4,12 +4,20 @@
 \alias{fit.cure.model}
 \title{Parametric cure model}
 \usage{
-fit.cure.model(formula, data, formula.surv = NULL, type = c("mixture",
-  "nmixture"), dist = c("weibull", "exponential", "lognormal", "weiwei",
-  "weiexp"), link = c("logit", "loglog", "identity", "probit"),
-  bhazard = NULL, covariance = TRUE, link.mix = c("logit", "loglog",
-  "identity", "probit"), control = list(maxit = 10000),
-  method = "Nelder-Mead", init = NULL)
+fit.cure.model(
+  formula,
+  data,
+  formula.surv = NULL,
+  type = c("mixture", "nmixture"),
+  dist = c("weibull", "exponential", "lognormal", "weiwei", "weiexp", "gmw"),
+  link = c("logit", "loglog", "identity", "probit"),
+  bhazard = NULL,
+  covariance = TRUE,
+  link.mix = c("logit", "loglog", "identity", "probit"),
+  control = list(maxit = 10000),
+  method = "Nelder-Mead",
+  init = NULL
+)
 }
 \arguments{
 \item{formula}{Formula for modelling the cure proportion. The left hand side
@@ -41,7 +49,8 @@ weibull-weibull mixture model and weibull-exponential model.\cr Only used when \
 If not provided, the optimization will start in 0.}
 }
 \value{
-An object of class \code{cm} containing the parameters of the cure model.
+An object of class \code{cm} containing the estimated parameters of the cure model.
+The appropriate link functions taken on \eqn{\pi} and the \eqn{\theta_i}'s are linear in the covariates corresponding to their respective parameter estimates.
 }
 \description{
 This function fits parametric cure models using simple parametric distributions.
@@ -60,14 +69,17 @@ Exponential model:
 Weibull model:
 \deqn{S_u(t) = \exp\left(-\theta_1 t^{\theta_2}\right).}
 Log-normal model:
-\deqn{S_u(t) = 1 - \Phi\left(\frac{\log(t) - \theta_1}{\theta_2}\right)}
+\deqn{S_u(t) = 1 - \Phi\left(\frac{\log(t) - \theta_1}{\theta_2}\right).}
 Weibull-exponential mixture model:
 \deqn{S_u(t) = \theta_1\exp\left(-\theta_2 t^{\theta_3}\right) + (1 - \theta_1)\exp\left(-\theta_4 t\right).}
 Weibull-Weibull mixture model:
 \deqn{S_u(t) = \theta_1\exp\left(-\theta_2 t^{\theta_3}\right) + (1 - \theta_1)\exp\left(-\theta_4 t^{\theta_5}\right).}
-In the two last mixture models, the link function for the mixture component is controlled by \code{link.mix}.
+Generalized modified Weibull distribution:
+\deqn{S_u(t) = 1-\left(1 - \exp\left(-\theta_1 t ^ \theta_2 \exp(\theta_3 t)\right)\right) ^ \theta_4.}
+In the Weibull-exponential and Weibull-Weibull mixture models, the link function for the mixture component is controlled by \code{link.mix}.
 The remaining parameters are modelled using an exponential link function except \eqn{\theta_1} in the log-normal model,
-which is modelled using the identity.
+which is modelled using the identity. Parameters are not transformed back to the original scale in
+the outputted object and related \code{print.cm} and \code{summary.cm} functions
 }
 \examples{
 ##Use data cleaned version of the colon cancer data from the rstpm2 package
@@ -76,7 +88,7 @@ set.seed(2)
 colonDC <- colonDC[sample(1:nrow(colonDC), 500), ]
 
 ##Extract general population hazards
-colonDC$bhaz <- general.haz(time = "FU", age = "agedays", sex = "sex", year = "dx",
+colonDC$bhaz <- general.haz(time = "FU", rmap = list(age = "agedays", sex = "sex", year= "dx"),
                             data = colonDC, ratetable = survexp.dk)
 
 

@@ -439,15 +439,15 @@ GenFlexCureModel <- function(formula, data, smooth.formula = NULL, smooth.args =
 
   #Output the results
   L <- list(formula = formula, smooth.formula = smooth.formula, tvc.formula = tvc.formula,
-            logH.formula = logH.formula, cr.formula = cr.formula,
+            logH.formula = logH.formula, cr.formula = cr.formula, full.formula = full.formula,
             coefs = res$par[1:ncol(X.cr)],
             coefs.spline = res$par[(ncol(X.cr) + 1):length(res$par)],
             data = data, NegMaxLik = min(MLs), covariance = cov, ci = covariance,
             type = type, NegMaxLiks = MLs, optim.pars = optim.args[c("control", "fn")],
             args = args, timeExpr = timeExpr, lm.obj = lm.obj, lm.obj.cr = lm.obj.cr,
-            link.type.cr = link.type.cr, link.surv = link.surv, excess = excess,
+            link.type.cr = link.type.cr, link.type = link.type, link.surv = link.surv, excess = excess,
             timeVar = timeVar, transX = transX, transXD = transXD,
-            time = time, event = event, eventExpr = eventExpr, cure.type = cure.type)
+            time = time, event = event, eventExpr = eventExpr, cure.type = cure.type, ML = -min(MLs))
 
   class(L) <- c("gfcm", "cuRe")
   L
@@ -550,62 +550,64 @@ get.init <- function(formula, data, smooth.formula, logH.formula, tvc.formula, c
 }
 
 
-
-#Print function for class fcm
-print.gfcm <- function(fit){
+#' @export
+#' @method print gfcm
+#Print function for class gfcm
+print.gfcm <- function(x, ...){
   cat("Call pi:\n")
-  print(fit$formula)
+  print(x$formula)
   cat("Call S_u(t):\n")
-  print(fit$formula_main)
+  print(x$formula_main)
   cat("\nCoefficients:\n")
-  print(list(pi = fit$coefs,
-             surv = fit$coefs.spline))
+  print(list(pi = x$coefs,
+             surv = x$coefs.spline))
 }
 
-#Summary function for class fcm
-summary.gfcm <- function(fit){
-  se <- sqrt(diag(fit$covariance))
-  tval <- c(fit$coefs, fit$coefs.spline) / se
-  coefs <- c(fit$coefs, fit$coefs.spline)
-  TAB1 <- cbind(Estimate = fit$coefs,
-                StdErr = se[1:length(fit$coefs)],
-                t.value = tval[1:length(fit$coefs)],
-                p.value = ifelse(is.na(tval[1:length(fit$coefs)]), rep(NA, length(fit$coefs)),
-                                 2*pt(-abs(tval[1:length(fit$coefs)]), df = fit$df)))
+#' @export
+#' @method summary gfcm
+#Summary function for class gfcm
+summary.gfcm <- function(object, ...){
+  se <- sqrt(diag(object$covariance))
+  zval <- c(object$coefs, object$coefs.spline) / se
+  TAB <- cbind(Estimate = c(object$coefs, object$coefs.spline),
+               StdErr = se,
+               z.value = zval,
+               p.value = ifelse(is.na(zval), rep(NA, length(se)),
+                                2 * pnorm(-abs(zval))))
 
-  TAB2 <- cbind(Estimate = fit$coefs.spline,
-                StdErr = se[1:length(fit$coefs.spline)],
-                t.value = tval[1:length(fit$coefs.spline)],
-                p.value = ifelse(is.na(tval[1:length(fit$coefs.spline)]), rep(NA, length(fit$coefs.spline)),
-                                 2*pt(-abs(tval[1:length(fit$coefs.spline)]), df = fit$df)))
-
+  TAB1 <- TAB[1:length(object$coefs), ,drop = F]
+  TAB2 <- TAB[(length(object$coefs) + 1):(length(object$coefs.spline) + length(object$coefs)),, drop = F]
 
   results <- list(pi = TAB1, surv = TAB2)
-  results$type <- fit$type
-  results$linkpi <- fit$linkpi
-  results$linksu <- fit$linksu
-  results$ML <- fit$NegMaxLik
-  results$formula <- fit$formula
-  results$formula.fix <- fit$formula_main
-  results$formula.tvc <- fit$tvc.formula
-  class(results) <- "summary.fcm"
+  results$type <- object$type
+  results$linkpi <- object$link.type.cr
+  results$linksu <- object$link.type
+  results$ML <- object$NegMaxLik
+  results$formula <- object$formula
+  results$smooth.formula <- object$smooth.formula
+  results$cr.formula <- object$cr.formula
+  results$tvc.formula <- object$tvc.formula
+  results$full.formula <- object$full.formula
+  class(results) <- "summary.gfcm"
   results
 }
 
-#Print for class summary.fcm
-print.summary.gfcm <- function(x)
+#' @export
+#' @method print summary.gfcm
+#Print for class summary.gfcm
+print.summary.gfcm <- function(x, ...)
 {
   cat("Call - pi:\n")
   print(x$formula)
   #    cat("\n")
-  printCoefmat(x$pi, P.values = TRUE, has.Pvalue = T)
-  cat("\nCall - surv - baseline: ")
-  print(as.formula(deparse(x$formula.fix)))
-  if(length(all.vars(x$formula.tvc))){
-    cat("Call - surv - tvc: ")
-    print(deparse(x$formula.tvc))
-  }
-  printCoefmat(x$surv, P.values = TRUE, has.Pvalue = T)
+  stats::printCoefmat(x$pi, P.values = TRUE, has.Pvalue = T, signif.legend = F)
+  cat("\nCall - surv:\n")
+  print(x$full.formula)
+  # if(length(all.vars(x$formula.tvc))){
+  #   cat("Call - surv - tvc: ")
+  #   print(deparse(x$formula.tvc))
+  # }
+  stats::printCoefmat(x$surv, P.values = TRUE, has.Pvalue = T)
   cat("\n")
   cat("Type =", x$type, "\n")
   cat("Link - pi =", x$linkpi, "\n")

@@ -4,10 +4,20 @@
 \alias{lts}
 \title{Long term survival predictions}
 \usage{
-lts(fit, type = c("surv", "hazard", "cumhaz", "loghaz", "fail"),
-  newdata = NULL, time = NULL, var.type = c("ci", "se", "n"),
-  exp.fun = NULL, ratetable = cuRe::survexp.dk, rmap, scale = 365.24,
-  smooth.exp = FALSE, link = NULL)
+lts(
+  fit,
+  type = c("surv", "hazard", "cumhaz", "loghaz", "fail"),
+  newdata = NULL,
+  time = NULL,
+  var.type = c("ci", "se", "n"),
+  exp.fun = NULL,
+  ratetable = cuRe::survexp.dk,
+  rmap,
+  scale = 365.24,
+  smooth.exp = FALSE,
+  link = NULL,
+  mean = FALSE
+)
 }
 \arguments{
 \item{fit}{Fitted model to do predictions from. Possible classes are \code{gfcm}, \code{stpm2},
@@ -44,6 +54,9 @@ That is, the time scale is assumed to be in years.}
 \item{link}{Character, indicating the link function for the variance calculations.
 Possible values are "\code{log}", "\code{cloglog}" for \eqn{log(-log(x))} , "\code{mlog}" for -log(x),
 and "\code{I}" for the indentity.}
+
+\item{mean}{Logical. If \code{TRUE}, the function outputs the average estimate across the
+rows in \code{newdata}. If \code{newdata = NULL}, the argument is not used. The default is \code{FALSE}.}
 }
 \value{
 An object of class \code{lts} containing the predictions of each individual in \code{newdata}.
@@ -67,7 +80,7 @@ set.seed(2)
 colonDC <- colonDC[sample(1:nrow(colonDC), 1000), ]
 
 ##Extract general population hazards
-colonDC$bhaz <- general.haz(time = "FU", age = "agedays", sex = "sex", year = "dx",
+colonDC$bhaz <- general.haz(time = "FU", rmap = list(age = "agedays", sex = "sex", year= "dx"),
                             data = colonDC, ratetable = survexp.dk)
 
 ##Fit flexible parametric relative survival model

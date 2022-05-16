@@ -1,98 +1,3 @@
-#' Extract general population hazard
-#'
-#' Yearly general population hazards matched on age, gender, and calendar year is extracted from a ratetable.
-#'
-#' @param time Either a numeric vector of follow-up times (in days) or a character indicating the variable
-#' containing the follow-up times in the data.
-#' @param age Either a numeric vector of ages (in days) or a character indicating the variable containing the patient ages in the data.
-#' @param sex Either a character vector or factor with the sex of each patient
-#' or a character indicating the variable containing the patient sex in the data.
-#' @param year Either a vector of class \code{Date} with the calendar time points
-#' or a character indicating the variable containing the calendar times in the data.
-#' @param data The data from which to extract variables from.
-#' If \code{time}, \code{age}, \code{sex}, or \code{year} are not characters, this will not be used.
-#' @param ratetable Object of class \code{ratetable} to extract background hazards from. Defaults to \code{survexp.dk}.
-#' @return An object of class \code{numeric} containing the yearly expected hazards.
-#' @export
-#' @example inst/general.haz.ex.R
-
-general.haz <- function(time, age, sex, year, data = NULL, ratetable = cuRe::survexp.dk){
-  if(is.character(time)){
-    time <- data[, time]
-  }
-  if(is.character(age)){
-    age <- data[, age]
-  }
-  if(is.character(sex)){
-    sex <- data[, sex]
-  }
-  if(is.character(year)){
-    year <- data[, year]
-  }
-
-  dimid <- attr(ratetable, "dimid")
-  od <- sapply(c("age", "sex", "year"), function(x) which(dimid == x))
-  n <- length(time)
-
-  haz <- rep(NA, n)
-  sex_new <- as.character(sex)
-  age_new <- pmin(round((age + time) / ayear), 99)
-  year_eval <- format(year + time, "%Y")
-  ryear <- range(as.numeric(dimnames(ratetable)[[od["year"]]]))
-  year_eval <- ifelse(year_eval < ryear[1], ryear[1], year_eval)
-  year_eval <- ifelse(year_eval > ryear[2], ryear[2], year_eval)
-
-
-  D <- data.frame(age = age_new, sex = sex_new, year = year_eval, stringsAsFactors = F)
-  D <- D[, od]
-
-  for(i in 1:n){
-    haz[i] <- ratetable[D[i, 1], D[i, 2], D[i, 3]]
-  }
-  haz <- haz * ayear
-  haz
-}
-
-
-# general.haz2 <- function(time, rmap, data = NULL, ratetable = survexp.dk, scale = ayear){
-#   dimid <- attr(ratetable, "dimid")
-#   vars <-
-#
-#     od <- sapply(c("age", "sex", "year"), function(x) which(dimid == x))
-#   n <- length(time)
-#
-#   haz <- rep(NA, n)
-#   sex_new <- as.character(sex)
-#   age_new <- pmin(round((age + time) / ayear), 99)
-#   year_eval <- format(year + time, "%Y")
-#   ryear <- range(as.numeric(dimnames(ratetable)[[od["year"]]]))
-#   year_eval <- ifelse(year_eval < ryear[1], ryear[1], year_eval)
-#   year_eval <- ifelse(year_eval > ryear[2], ryear[2], year_eval)
-#
-#
-#   D <- data.frame(age = age_new, sex = sex_new, year = year_eval, stringsAsFactors = F)
-#   D <- D[, od]
-#
-#   #D2 <- D
-#   #D2$sex <- ifelse(D2$sex == "male", 1, 2)
-#   #D2$year <- as.numeric(D2$year)
-#   #a <- match.ratetable(as.matrix(D2), ratetable)
-#
-#   dim_names <- dimnames(ratetable)
-#   J <- data.frame(rates = c(ratetable), rep(as.numeric(dim_names[[1]]), length(dim_names[[2]]) * length(dim_names[[3]])),
-#                   rep(as.numeric(dim_names[[2]]), length(dim_names[[1]]) * length(dim_names[[3]])),
-#                   rep(dim_names[[3]], each = length(dim_names[[1]]) *  length(dim_names[[2]])))
-#
-#   names(J)[-1] <- dimid
-#
-#   #head(J)
-#
-#   #ratetable["38", "1835",]
-#
-#   merge(D, J)$rates * scale
-# }
-
-
 #Global variable indicating the duration of a year
 ayear <- 365.24
 
@@ -192,9 +97,19 @@ get.surv <- function(dist, link.mix = function(x) log(x / (1 - x))){
       p * wei1 + (1 - p) * exp2
     })
 
+  }else if(dist == "gmw"){
+
+    return(function(x, lps){
+      scale  <- exp(lps[[2]])
+      shape1 <- exp(lps[[3]])
+      frag   <- exp(lps[[4]])
+      shape2 <- exp(lps[[5]])
+      1 - (1 - exp(-x ^ shape1 * scale * exp(x * frag))) ^ shape2
+    })
+
   }else{
 
-    stop("Distribution should be either 'exponential', 'weibull', 'lognormal', 'weiwei', or 'weiexp'")
+    stop("Distribution should be either 'exponential', 'weibull', 'lognormal', 'weiwei', 'weiexp', or 'gmw'")
 
   }
 }
@@ -248,10 +163,22 @@ get.dens <- function(dist, link.mix = function(x) log(x / (1 - x))){
       p * f_1 + (1 - p) * f_2
     })
 
+  }else if(dist == "gmw"){
+
+    return(function(x, lps){
+      scale  <- exp(lps[[2]])
+      shape1 <- exp(lps[[3]])
+      frag   <- exp(lps[[4]])
+      shape2 <- exp(lps[[5]])
+      num    <- scale * shape2 * x ^ (shape1 - 1) * (shape1 + frag * x) *
+                exp(frag * x - scale * x ^ shape1 * exp(frag * x))
+      denom  <- (1 - exp(-scale * x ^ shape1 * exp(frag * x))) ^ (1 - shape2)
+      num / denom
+    })
 
   }else {
 
-    stop("Distribution should be either 'exponential', 'weibull', 'lognormal', 'weiwei', or 'weiexp'")
+    stop("Distribution should be either 'exponential', 'weibull', 'lognormal', 'weiwei', 'weiexp', or 'gmw'")
 
   }
 }
@@ -264,7 +191,7 @@ calc.lps <- function(Xs, param){
   for(i in 1:length(Xs)){
     if(ncol(Xs[[i]]) != 0){
       lps[[i]] <- Xs[[i]] %*% param[1:ncol(Xs[[i]])]
-      param <- param[-c(1:ncol(Xs[[i]]))]
+      param    <- param[-c(1:ncol(Xs[[i]]))]
     }
   }
   lps
@@ -279,12 +206,13 @@ minuslog_likelihoodDelayed <- function(param, time, time0, event, Xs, ind0, link
   lps <- calc.lps(Xs, param)
 
   #Compute pi and the survival of the uncured
-  pi <- link.fun(lps[[1]])
-  surv <- surv.fun(time, lps)
-  rsurv <- cure.type$surv(pi, surv)
-  likterms <- log(rsurv)
-  surv0 <- surv.fun(time0, lps)
-  rsurv0 <- cure.type$surv(pi, surv0)
+  pi             <- link.fun(lps[[1]])
+  surv           <- surv.fun(time, lps)
+  rsurv          <- cure.type$surv(pi, surv)
+  likterms       <- log(rsurv)
+
+  surv0          <- surv.fun(time0, lps)
+  rsurv0         <- cure.type$surv(pi, surv0)
   likterms[ind0] <- likterms[ind0] - log(rsurv0[ind0])
 
   #Calculate hazard term only for uncensored patients.
@@ -292,8 +220,8 @@ minuslog_likelihoodDelayed <- function(param, time, time0, event, Xs, ind0, link
   dens <- dens.fun(time, lps)
   #pi.events <- pi[events]
   #surv.events <- surv[events]
-  ehaz <- cure.type$haz(pi[event], -dens[event], rsurv[event])
-  haz <- bhazard[event] + ehaz
+  ehaz            <- cure.type$haz(pi[event], -dens[event], rsurv[event])
+  haz             <- bhazard[event] + ehaz
   likterms[event] <- likterms[event] + log(haz)
 
   #Output the negative log likelihood
