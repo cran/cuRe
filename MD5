@@ -1,4 +1,4 @@
-bb4b53f4f6932bfcb29a898d641644f4 *DESCRIPTION
+6cd06e1857fa306ed518a5451c560791 *DESCRIPTION
 8e364ed61b1cfad24c7a7bab0ab85417 *NAMESPACE
 29d76955a03c62f394750bacbba0a785 *R/AIC.R
 a76db47e3e6ce2e16554ac7075a68dfa *R/GenFlexCureModel.R
@@ -10,7 +10,7 @@ fe2a699bc12fef8092432f5462a25123 *R/calc.Crude.R
 5c921b0fc45052bb1bf50954abdb5f1c *R/calc.cure.quantile.R
 ac5a55cbeaabee0acb83f83dc3e54912 *R/cb.R
 a2ace7d3a90a3488709b59fc388df3fe *R/cbc.R
-c40630f958ee62e9e036a9889dc33706 *R/fit.cure.model.R
+31d4725f6816d21f92064d57d01337f1 *R/fit.cure.model.R
 6736a3ab3aedac060b03af20759a633a *R/general.haz.R
 59a8a440f43b8e05a8fd86c66a3f4cb6 *R/generate.colonDC.R
 e2a6231b944f5709378cd84a35d71c2b *R/generate.survexp.dk.R
@@ -56,7 +56,7 @@ fb9cfe3bd21ed402975af4ae4ee1a84a *man/cb.Rd
 2f772eb7deba290c722caebf47e340a5 *man/colonDC.Rd
 03512de4d8c8fe647bf80263ceb99768 *man/fit.cure.model.Rd
 efbec4451a6134c8c3ae8f4446788c19 *man/general.haz.Rd
-a77fc15857465ec956ec3f5cb66faa3e *man/lrtest.Rd
+c135847033143aa2066af299ccde6762 *man/lrtest.Rd
 fa360ac29149cdfb4de823b53302f5b2 *man/lts.Rd
 8fed7d023dfbcf15a2e06b5d7496c288 *man/plot.crude.Rd
 ad5cc69497208fe7b104a2134737abcf *man/plot.cuRe.Rd
